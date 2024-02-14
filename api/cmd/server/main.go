@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	_ "github.com/lib/pq"
+	"github.com/skip2/go-qrcode"
 
 	"github.com/kylehuntsman/on-chain-hackathon-2024/internal/transaction"
 )
@@ -31,7 +32,7 @@ func main() {
 	defer db.Close()
 	store.DB = db
 
-	_, err = store.DB.Exec("CREATE TABLE IF NOT EXISTS transactions (uuid TEXT PRIMARY KEY, chain TEXT, amount INTEGER, address TEXT)")
+	_, err = store.DB.Exec("CREATE TABLE IF NOT EXISTS transactions (uuid TEXT PRIMARY KEY, amount INTEGER, address TEXT)")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -56,11 +57,27 @@ func main() {
 				http.Error(w, err.Error(), http.StatusNotFound)
 				return
 			}
-			json.NewEncoder(w).Encode(t)
+			qrCodeURL := fmt.Sprintf("ethereum:%s?value=%d", t.Address, t.Amount)
+			png, err := qrcode.Encode(qrCodeURL, qrcode.Medium, 512)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			qrCodeStr := fmt.Sprintf("data:image/png;base64,%s", png)
+			tView := TransactionView{
+				Transacion:   *t,
+				QRCodeString: qrCodeStr,
+			}
+			json.NewEncoder(w).Encode(tView)
 		} else {
 			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		}
 	})
 
 	http.ListenAndServe(":8080", nil)
+}
+
+type TransactionView struct {
+	Transacion   transaction.Transaction `json:"transaction"`
+	QRCodeString string                  `json:"qrCodeString"`
 }

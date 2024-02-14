@@ -8,7 +8,6 @@ import (
 )
 
 type Transaction struct {
-	Chain   string `json:"chain"`
 	Amount  int    `json:"amount"`
 	Address string `json:"address"`
 }
@@ -25,7 +24,7 @@ type Store struct {
 func (s *Store) SaveTransaction(t Transaction) (string, error) {
 	uuid := uuid.New()
 	fmt.Println(t)
-	_, err := s.DB.Exec("INSERT INTO transactions (uuid, chain, amount, address) VALUES ($1, $2, $3, $4)", uuid, t.Chain, t.Amount, t.Address)
+	_, err := s.DB.Exec("INSERT INTO transactions (uuid, amount, address) VALUES ($1, $2, $3, $4)", uuid, t.Amount, t.Address)
 	if err != nil {
 		return "", err
 	}
@@ -38,9 +37,9 @@ func (s *Store) GetTransaction(id string) (*Transaction, error) {
 		return nil, err
 	}
 
-	row := s.DB.QueryRow("SELECT chain, amount, address FROM transactions WHERE uuid = $1", uuid)
+	row := s.DB.QueryRow("SELECT amount, address FROM transactions WHERE uuid = $1", uuid)
 	t := &Transaction{}
-	err = row.Scan(&t.Chain, &t.Amount, &t.Address)
+	err = row.Scan(&t.Amount, &t.Address)
 	if err != nil {
 		return nil, err
 	}
