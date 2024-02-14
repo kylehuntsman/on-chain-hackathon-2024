@@ -36,7 +36,7 @@ func (ts *Store) GetTransaction(id string, db *sql.DB) (*Transaction, error) {
 		return nil, err
 	}
 
-	row := db.QueryRow("SELECT chain, amount, address FROM transactions WHERE uuid = ?", uuid)
+	row := db.QueryRow("SELECT chain, amount, address FROM transactions WHERE uuid = $1", uuid)
 	t := &Transaction{}
 	err = row.Scan(&t.Chain, &t.Amount, &t.Address)
 	if err != nil {
