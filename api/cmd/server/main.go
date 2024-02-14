@@ -29,8 +29,9 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
+	store.DB = db
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS transactions (uuid TEXT PRIMARY KEY, chain TEXT, amount INTEGER, address TEXT)")
+	_, err = store.DB.Exec("CREATE TABLE IF NOT EXISTS transactions (uuid TEXT PRIMARY KEY, chain TEXT, amount INTEGER, address TEXT)")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,15 +43,15 @@ func main() {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			hash, err := store.SaveTransaction(t, db)
+			uuid, err := store.SaveTransaction(t)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			w.Write([]byte(hash))
+			w.Write([]byte(uuid))
 		} else if r.Method == http.MethodGet {
-			hash := r.URL.Query().Get("uuid")
-			t, err := store.GetTransaction(hash, db)
+			uuid := r.URL.Query().Get("uuid")
+			t, err := store.GetTransaction(uuid)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusNotFound)
 				return

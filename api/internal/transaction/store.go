@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/google/uuid"
 )
@@ -13,7 +14,7 @@ type Transaction struct {
 }
 
 type Store struct {
-	*sql.DB
+	DB       *sql.DB
 	Host     string
 	Port     int
 	DBName   string
@@ -21,22 +22,23 @@ type Store struct {
 	Password string
 }
 
-func (ts *Store) SaveTransaction(t Transaction, db *sql.DB) (string, error) {
+func (s *Store) SaveTransaction(t Transaction) (string, error) {
 	uuid := uuid.New()
-	_, err := db.Exec("INSERT INTO transactions (uuid, chain, amount, address) VALUES ($1, $2, $3, $4)", uuid, t.Chain, t.Amount, t.Address)
+	fmt.Println(t)
+	_, err := s.DB.Exec("INSERT INTO transactions (uuid, chain, amount, address) VALUES ($1, $2, $3, $4)", uuid, t.Chain, t.Amount, t.Address)
 	if err != nil {
 		return "", err
 	}
 	return uuid.String(), nil
 }
 
-func (ts *Store) GetTransaction(id string, db *sql.DB) (*Transaction, error) {
+func (s *Store) GetTransaction(id string) (*Transaction, error) {
 	uuid, err := uuid.Parse(id)
 	if err != nil {
 		return nil, err
 	}
 
-	row := db.QueryRow("SELECT chain, amount, address FROM transactions WHERE uuid = $1", uuid)
+	row := s.DB.QueryRow("SELECT chain, amount, address FROM transactions WHERE uuid = $1", uuid)
 	t := &Transaction{}
 	err = row.Scan(&t.Chain, &t.Amount, &t.Address)
 	if err != nil {
