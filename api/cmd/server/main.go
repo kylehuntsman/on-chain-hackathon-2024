@@ -6,12 +6,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	_ "github.com/lib/pq"
+
+	"github.com/kylehuntsman/on-chain-hackathon-2024/internal/transaction"
 )
 
 func main() {
 	fmt.Println("Hello, World!")
 
-	config := Database{
+	store := transaction.Store{
 		Host:     "localhost",
 		Port:     5432,
 		DBName:   "postgres",
@@ -19,35 +23,34 @@ func main() {
 		Password: "postgres",
 	}
 
-	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", config.Host, config.Port, config.User, config.Password, config.DBName)
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", store.Host, store.Port, store.User, store.Password, store.DBName)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	database := &Database{db, config.Host, config.Port, config.DBName, config.User, config.Password}
-	_, err = database.Exec("CREATE TABLE IF NOT EXISTS transactions (hash TEXT PRIMARY KEY, chain TEXT, amount INTEGER, address TEXT)")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS transactions (uuid TEXT PRIMARY KEY, chain TEXT, amount INTEGER, address TEXT)")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	http.HandleFunc("/transaction", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			var t Transaction
+			var t transaction.Transaction
 			if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			hash, err := database.saveTransaction(t)
+			hash, err := store.SaveTransaction(t)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			w.Write([]byte(hash))
 		} else if r.Method == http.MethodGet {
-			hash := r.URL.Query().Get("hash")
-			t, err := database.getTransaction(hash)
+			hash := r.URL.Query().Get("uuid")
+			t, err := store.GetTransaction(hash)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusNotFound)
 				return
