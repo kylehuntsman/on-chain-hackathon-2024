@@ -21,22 +21,22 @@ type Store struct {
 	Password string
 }
 
-func (ts *Store) SaveTransaction(t Transaction) (string, error) {
+func (ts *Store) SaveTransaction(t Transaction, db *sql.DB) (string, error) {
 	uuid := uuid.New()
-	_, err := ts.Exec("INSERT INTO transactions (uuid, chain, amount, address) VALUES (?, ?, ?, ?)", uuid, t.Chain, t.Amount, t.Address)
+	_, err := db.Exec("INSERT INTO transactions (uuid, chain, amount, address) VALUES ($1, $2, $3, $4)", uuid, t.Chain, t.Amount, t.Address)
 	if err != nil {
 		return "", err
 	}
 	return uuid.String(), nil
 }
 
-func (ts *Store) GetTransaction(id string) (*Transaction, error) {
+func (ts *Store) GetTransaction(id string, db *sql.DB) (*Transaction, error) {
 	uuid, err := uuid.Parse(id)
 	if err != nil {
 		return nil, err
 	}
 
-	row := ts.QueryRow("SELECT chain, amount, address FROM transactions WHERE uuid = ?", uuid)
+	row := db.QueryRow("SELECT chain, amount, address FROM transactions WHERE uuid = ?", uuid)
 	t := &Transaction{}
 	err = row.Scan(&t.Chain, &t.Amount, &t.Address)
 	if err != nil {

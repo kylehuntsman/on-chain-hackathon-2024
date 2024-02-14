@@ -42,7 +42,7 @@ func main() {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			hash, err := store.SaveTransaction(t)
+			hash, err := store.SaveTransaction(t, db)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -50,7 +50,7 @@ func main() {
 			w.Write([]byte(hash))
 		} else if r.Method == http.MethodGet {
 			hash := r.URL.Query().Get("uuid")
-			t, err := store.GetTransaction(hash)
+			t, err := store.GetTransaction(hash, db)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusNotFound)
 				return
