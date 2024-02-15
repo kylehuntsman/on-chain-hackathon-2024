@@ -24,7 +24,7 @@ type Store struct {
 func (s *Store) SaveTransaction(t Transaction) (string, error) {
 	uuid := uuid.New()
 	fmt.Println(t)
-	_, err := s.DB.Exec("INSERT INTO transactions (uuid, amount, address) VALUES ($1, $2, $3, $4)", uuid, t.Amount, t.Address)
+	_, err := s.DB.Exec("INSERT INTO transactions (uuid, amount, address) VALUES ($1, $2, $3)", uuid, t.Amount, t.Address)
 	if err != nil {
 		return "", err
 	}
